@@ -1,0 +1,6 @@
+﻿services:
+  cryptoshredding.api:
+    image: cryptoshredding.api
+    build:
+      context: .
+      dockerfile: CryptoShredding.Api/Dockerfile
