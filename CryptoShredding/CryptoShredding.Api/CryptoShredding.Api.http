@@ -1,6 +1,0 @@
-@CryptoShredding.Api_HostAddress = http://localhost:5204
-
-GET {{CryptoShredding.Api_HostAddress}}/weatherforecast/
-Accept: application/json
-
-###
