@@ -19,7 +19,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\CryptoShredding.Domain\CryptoShredding.Domain.csproj" />
+      <ProjectReference Include="..\CryptoShredding.Core\CryptoShredding.Core.csproj" />
     </ItemGroup>
 
 </Project>

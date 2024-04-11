@@ -1,3 +1,5 @@
+using CryptoShredding.Core;
+
 namespace CryptoShredding.Api;
 
 public class Program
@@ -9,7 +11,8 @@ public class Program
         builder.Services.AddControllers();
         builder.Services.AddEndpointsApiExplorer();
         builder.Services.AddSwaggerGen();
-
+        builder.Services.AddCore();
+        
         var app = builder.Build();
 
         if (app.Environment.IsDevelopment())
@@ -22,6 +25,7 @@ public class Program
         app.UseAuthorization();
         app.MapControllers();
 
+        
         app.Run();
     }
 }
