@@ -42,6 +42,7 @@ public class OrdersController(OrdersDbContext db, CustomersClient customersClien
             result.Add(new
             {
                 order.Id,
+                order.CustomerId,
                 order.Product,
                 order.Amount,
                 order.CreatedAt,

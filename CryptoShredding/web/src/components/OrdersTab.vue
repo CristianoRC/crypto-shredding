@@ -29,6 +29,7 @@ const form = reactive({ customerId: '', product: '', amount: '' })
 watch(productChoice, (value) => {
   if (value === CUSTOM_PRODUCT) {
     form.product = ''
+    form.amount = ''
     return
   }
   const preset = PRODUCT_PRESETS.find((p) => p.label === value)
@@ -48,16 +49,12 @@ function formatDate(value) {
 
 async function loadCustomerOptions() {
   const customers = await listCustomers()
-  customerOptions.value = await Promise.all(
-    customers.map(async (customer) => {
-      const detail = await getCustomer(customer.id)
-      const label =
-        detail.status === 'ok'
-          ? detail.decrypted.name
-          : `Cliente removido (${customer.id.slice(0, 8)})`
-      return { id: customer.id, label }
-    }),
+  const withDetail = await Promise.all(
+    customers.map(async (customer) => ({ customer, detail: await getCustomer(customer.id) })),
   )
+  customerOptions.value = withDetail
+    .filter(({ detail }) => detail.status === 'ok')
+    .map(({ customer, detail }) => ({ id: customer.id, label: detail.decrypted.name }))
 }
 
 async function loadOrders() {
@@ -132,7 +129,15 @@ watch(
       </div>
       <div class="field">
         <label>Valor</label>
-        <input v-model="form.amount" type="number" min="0" step="0.01" required list="amount-suggestions" />
+        <input
+          v-model="form.amount"
+          type="number"
+          min="0"
+          step="0.01"
+          required
+          :readonly="productChoice !== CUSTOM_PRODUCT"
+          :list="productChoice === CUSTOM_PRODUCT ? 'amount-suggestions' : null"
+        />
         <datalist id="amount-suggestions">
           <option v-for="value in AMOUNT_SUGGESTIONS" :key="value" :value="value" />
         </datalist>
@@ -174,7 +179,10 @@ watch(
                 <div>{{ order.customer.name }}</div>
                 <div class="muted">{{ order.customer.document }}</div>
               </template>
-              <span v-else class="badge badge-danger">Cliente removido (dado esquecido)</span>
+              <template v-else>
+                <span class="badge badge-danger">Cliente removido (dado esquecido)</span>
+                <div class="cell-mono">{{ order.customerId.slice(0, 8) }}</div>
+              </template>
             </td>
             <td class="muted">{{ formatDate(order.createdAt) }}</td>
           </tr>
