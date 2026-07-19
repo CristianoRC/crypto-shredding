@@ -3,7 +3,7 @@
   --text-muted: #6b7280;
   --bg: #f7f7fb;
   --panel-bg: #ffffff;
-  --border: #e2e2ea;
+  --border: #e5e5ee;
   --accent: #6d28d9;
   --accent-bg: rgba(109, 40, 217, 0.08);
   --ok: #15803d;
@@ -12,6 +12,10 @@
   --danger-bg: rgba(185, 28, 28, 0.1);
   --mono: ui-monospace, Consolas, monospace;
   --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
+  --radius-lg: 14px;
+  --radius-md: 9px;
+  --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.05);
+  --shadow-md: 0 8px 24px rgba(15, 23, 42, 0.07);
 
   font: 16px/1.5 var(--sans);
   color: var(--text);
@@ -29,112 +33,220 @@ body {
 #app {
   max-width: 1100px;
   margin: 0 auto;
-  padding: 32px 20px 64px;
+  padding: 40px 20px 64px;
+}
+
+.app-header {
+  margin-bottom: 28px;
+}
+
+.eyebrow {
+  display: inline-block;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--accent);
+  margin-bottom: 6px;
 }
 
 h1 {
-  font-size: 28px;
-  margin: 0 0 4px;
+  font-size: 30px;
+  letter-spacing: -0.01em;
+  margin: 0 0 6px;
 }
 
 .subtitle {
   color: var(--text-muted);
-  margin-bottom: 24px;
+  margin: 0;
+  max-width: 60ch;
 }
 
 .tabs {
-  display: flex;
-  gap: 8px;
-  border-bottom: 1px solid var(--border);
-  margin-bottom: 24px;
+  display: inline-flex;
+  gap: 2px;
+  background: #eceef4;
+  padding: 4px;
+  border-radius: 12px;
+  margin-bottom: 28px;
 }
 
 .tabs button {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
   border: none;
   background: none;
   font: inherit;
   font-weight: 600;
-  padding: 10px 4px;
-  margin-right: 20px;
+  font-size: 14px;
+  padding: 9px 18px;
   color: var(--text-muted);
   cursor: pointer;
-  border-bottom: 2px solid transparent;
+  border-radius: 9px;
+  transition: color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+}
+
+.tabs button:hover:not(.active) {
+  color: var(--text);
 }
 
 .tabs button.active {
   color: var(--accent);
-  border-bottom-color: var(--accent);
+  background: var(--panel-bg);
+  box-shadow: var(--shadow-sm);
+}
+
+.tab-icon {
+  font-size: 15px;
+  line-height: 1;
+}
+
+.tab-panel {
+  display: flex;
+  flex-direction: column;
 }
 
 .panel {
   background: var(--panel-bg);
   border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 20px;
-  margin-bottom: 24px;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  padding: 22px 24px;
+  margin-bottom: 20px;
+}
+
+.panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
 }
 
 .panel h2 {
-  margin-top: 0;
-  font-size: 18px;
+  margin: 0 0 16px;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.panel-header h2 {
+  margin: 0;
+}
+
+.panel-icon {
+  font-size: 15px;
+  line-height: 1;
+}
+
+.count-badge {
+  background: var(--accent-bg);
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 700;
+  padding: 2px 10px;
+  border-radius: 999px;
 }
 
 form.inline {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
+  gap: 14px;
   align-items: flex-end;
 }
 
 .field {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 5px;
 }
 
 .field label {
   font-size: 13px;
+  font-weight: 500;
   color: var(--text-muted);
 }
 
 .field input,
 .field select {
   font: inherit;
-  padding: 8px 10px;
+  padding: 9px 11px;
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: var(--radius-md);
   min-width: 180px;
+  background: var(--panel-bg);
+  color: var(--text);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.field input:focus,
+.field select:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-bg);
 }
 
 button.primary {
   font: inherit;
   font-weight: 600;
-  padding: 9px 16px;
-  border-radius: 6px;
+  padding: 10px 18px;
+  border-radius: var(--radius-md);
   border: none;
   background: var(--accent);
   color: white;
   cursor: pointer;
+  transition: opacity 0.15s ease, transform 0.05s ease;
 }
 
 button.primary:hover {
   opacity: 0.9;
 }
 
+button.primary:active {
+  transform: translateY(1px);
+}
+
+button.secondary {
+  font: inherit;
+  font-weight: 600;
+  font-size: 13px;
+  padding: 7px 14px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  background: var(--panel-bg);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
+}
+
+button.secondary:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-bg);
+}
+
 button.danger {
   font: inherit;
   font-weight: 600;
   padding: 6px 12px;
-  border-radius: 6px;
+  border-radius: var(--radius-md);
   border: 1px solid var(--danger);
   background: var(--danger-bg);
   color: var(--danger);
   cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
 }
 
 button.danger:hover {
   background: var(--danger);
   color: white;
+}
+
+.table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
 }
 
 table {
@@ -146,9 +258,17 @@ table {
 th,
 td {
   text-align: left;
-  padding: 10px 8px;
+  padding: 11px 12px;
   border-bottom: 1px solid var(--border);
   vertical-align: top;
+}
+
+tbody tr:last-child td {
+  border-bottom: none;
+}
+
+tbody tr:hover {
+  background: #fafafa;
 }
 
 th {
@@ -157,6 +277,7 @@ th {
   font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 0.04em;
+  background: #fbfbfd;
 }
 
 .cell-mono {
@@ -203,7 +324,62 @@ th {
 }
 
 .empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   color: var(--text-muted);
-  font-style: italic;
-  padding: 12px 0;
+  padding: 36px 12px;
+  text-align: center;
+}
+
+.empty-icon {
+  font-size: 26px;
+  opacity: 0.5;
+}
+
+.loading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--text-muted);
+  font-size: 14px;
+  padding: 16px 0;
+}
+
+.spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 640px) {
+  #app {
+    padding: 24px 14px 48px;
+  }
+
+  .field input,
+  .field select {
+    min-width: 0;
+    width: 100%;
+  }
+
+  form.inline {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  button.primary {
+    width: 100%;
+  }
 }
