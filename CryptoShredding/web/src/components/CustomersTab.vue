@@ -138,8 +138,8 @@ onMounted(load)
         <thead>
           <tr>
             <th>Id</th>
-            <th>Cifrado (no banco)</th>
-            <th>Decifrado (via chave)</th>
+            <th>Encrypted (no banco)</th>
+            <th>Decrypted (via chave)</th>
             <th>Chave</th>
             <th>Origem</th>
             <th>Ação</th>

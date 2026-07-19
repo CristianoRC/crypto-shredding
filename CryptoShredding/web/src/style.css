@@ -160,6 +160,7 @@ form.inline {
   display: flex;
   flex-direction: column;
   gap: 5px;
+  flex: 1 1 180px;
 }
 
 .field label {
