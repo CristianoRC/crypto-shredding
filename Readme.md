@@ -3,8 +3,10 @@
 POC didática de **crypto-shredding**: cada cliente tem uma chave AES própria. "Esquecer" o cliente
 (GDPR/LGPD) = apagar só a chave. O dado cifrado continua no banco para sempre, mas irrecuperável.
 
-- `Customers`: dono do PII. Cifra nome/documento/endereço e guarda em `postgres-customers`. A chave vai
-  num banco separado, `postgres-customers-keys` (o cofre). Um Redis cacheia o resultado decifrado (TTL 10min).
+- `Customers`: dono do PII. Cifra nome/documento/endereço e guarda em `postgres-customers`. A chave (DEK)
+  de cada cliente vai num banco separado, `postgres-customers-keys` (o cofre) — embrulhada por uma master
+  key (KEK), ver [Envelope encryption](#envelope-encryption-a-chave-que-cifra-as-outras) abaixo. Um Redis
+  cacheia o resultado decifrado (TTL 10min).
 - `Orders`: "outro sistema". Guarda só `CustomerId` + dados de negócio, nunca PII, e busca o cliente via
   HTTP na API de `Customers`.
 
@@ -22,13 +24,45 @@ flowchart TD
     OrdersApi -->|"GET /api/customers/{id}"| CustomersApi
 
     CustomersApi --> PgCustomers[("postgres-customers\ncustomersdb.Customers\nEncryptedName/Document/Address")]
-    CustomersApi --> PgKeys[("postgres-customers-keys\nkeyvault.EncryptionKeys\nCOFRE")]
+    CustomersApi -->|"wrap/unwrap da DEK"| MasterKey["MasterKey (KEK)\nappsettings hoje\nAzure Key Vault / HashiCorp Vault em produção"]
+    CustomersApi --> PgKeys[("postgres-customers-keys\nkeyvault.EncryptionKeys\nCOFRE — DEK embrulhada pela KEK")]
     CustomersApi --> Redis[("redis\ncache do decifrado, TTL 10min")]
     OrdersApi --> PgOrders[("postgres-orders\nordersdb.Orders\nId, CustomerId, Product, Amount")]
 ```
 
 Shred = `DELETE` na linha de `EncryptionKeys` + invalida o Redis. `postgres-customers` e `postgres-orders`
 não mudam em nada.
+
+## Envelope encryption: a chave que cifra as outras
+
+Cada cliente tem sua própria DEK (*data encryption key*, AES-128 + IV) gerada na hora do `POST`. Só que
+essa DEK não é gravada em claro no cofre: ela é embrulhada (cifrada) por uma **master key** (KEK,
+*key-encryption-key*) antes de ir para `postgres-customers-keys`. Quem olhar a tabela `EncryptionKeys`
+direto no banco (um dump, um backup vazado) vê só `WrappedKeyMaterial` — um blob AES-CBC sem nenhum
+significado sem a KEK.
+
+- `CryptoService.CreateAsync` gera a DEK, embrulha com a KEK (`WrapKeyMaterial`) e só a versão embrulhada
+  vai para o `EncryptionKeys`.
+- `CryptoService.TryDecryptAsync` lê o blob embrulhado, desembrulha com a KEK (`UnwrapKeyMaterial`) para
+  recuperar a DEK e só então decifra nome/documento/endereço — igual antes.
+- O shred **não muda**: continua sendo o `DELETE` da linha. A DEK embrulhada, sem a linha, não serve pra
+  nada — e mesmo que sobrevivesse, sem a KEK ela também é inútil.
+
+Hoje a KEK é só um valor em `appsettings.json` / variável de ambiente (`MasterKey:Key` / `MasterKey:Iv`,
+ver [MasterKeyOptions.cs](CryptoShredding/Customers/Customers.Core/Services/CryptoService/MasterKeyOptions.cs)) —
+suficiente pra POC, mas é o ponto único de falha da arquitetura: quem lê o appsettings ou as env vars do
+pod lê a KEK. Em produção esse valor sairia do código/config e moraria num vault de verdade:
+
+- **Azure Key Vault**: a KEK vira uma `Key` gerenciada lá (possivelmente HSM-backed), e o `wrap`/`unwrap`
+  passam a ser chamadas ao vault (`WrapKey`/`UnwrapKey`) em vez de AES local. Como só existe **uma** KEK
+  (não uma por cliente), o custo fica em centavos (tier Standard, `$0.03`/10k operações, sem custo de
+  armazenamento) — o padrão certo pra escala, ao contrário de guardar uma secret por cliente lá.
+- **HashiCorp Vault (Transit engine)**: equivalente open source, roda no mesmo cluster kind — `datakey`/
+  `encrypt`/`decrypt` fazem o mesmo papel do Key Vault, sem sair do ambiente 100% local do projeto.
+
+Nos dois casos a mudança fica isolada em `WrapKeyMaterial`/`UnwrapKeyMaterial` (troca a chamada de AES
+local por uma chamada HTTP ao vault) — o resto do fluxo (DEK por cliente, shred = delete da linha) não
+muda.
 
 ## Estrutura
 

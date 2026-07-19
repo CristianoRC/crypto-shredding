@@ -38,6 +38,11 @@ spec:
               value: "Host=postgres-customers-keys;Port=5432;Database=keyvault;Username=postgres;Password=postgres"
             - name: ConnectionStrings__Redis
               value: "redis:6379"
+            # KEK que embrulha a DEK de cada cliente. Aqui vem de env var; em produção viria de um Key Vault/Vault.
+            - name: MasterKey__Key
+              value: "0Wo0wBzlJN4Mk9YDsstGwtyVqeagY427Ny+V//2vfvs="
+            - name: MasterKey__Iv
+              value: "w2f36u5YcyhBZ0+qtelp8A=="
 ---
 apiVersion: v1
 kind: Service

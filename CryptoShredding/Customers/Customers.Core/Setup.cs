@@ -21,6 +21,7 @@ public static class Setup
             options.Configuration = configuration.GetConnectionString("Redis");
         });
 
+        services.Configure<MasterKeyOptions>(configuration.GetSection(MasterKeyOptions.SectionName));
         services.AddScoped<CryptoService>();
 
         return services;

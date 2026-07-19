@@ -3,6 +3,7 @@ using System;
 using Customers.Core.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Customers.Core.Migrations.KeyVault
 {
     [DbContext(typeof(KeyVaultDbContext))]
-    partial class KeyVaultDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260719152404_EnvelopeEncryption")]
+    partial class EnvelopeEncryption
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

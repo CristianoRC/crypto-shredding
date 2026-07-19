@@ -5,6 +5,7 @@ using Customers.Core.Data;
 using Customers.Core.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Distributed;
+using Microsoft.Extensions.Options;
 
 namespace Customers.Core.Services.CryptoService;
 
@@ -19,18 +20,26 @@ public record DecryptResult(DecryptStatus Status, Customer? Customer, string? So
 
 public record CustomerSummary(Guid Id, string EncryptedName, string EncryptedDocument, string EncryptedAddress, bool KeyExists);
 
-public class CryptoService(CustomersDbContext customersDb, KeyVaultDbContext keyVaultDb, IDistributedCache cache)
+public class CryptoService(
+    CustomersDbContext customersDb,
+    KeyVaultDbContext keyVaultDb,
+    IDistributedCache cache,
+    IOptions<MasterKeyOptions> masterKeyOptions)
 {
     private static readonly TimeSpan CacheTtl = TimeSpan.FromMinutes(10);
+
+    private readonly byte[] _masterKey = Convert.FromBase64String(masterKeyOptions.Value.Key);
+    private readonly byte[] _masterIv = Convert.FromBase64String(masterKeyOptions.Value.Iv);
 
     public async Task<Customer> CreateAsync(Customer customer)
     {
         var id = customer.Id == Guid.Empty ? Guid.NewGuid() : customer.Id;
-        var encryptionKey = GenerateEncryptionKey(id);
+        var (key, iv) = GenerateCustomerKey();
+        var encryptionKey = new EncryptionKey { CustomerId = id, WrappedKeyMaterial = WrapKeyMaterial(key, iv) };
 
         using var aes = Aes.Create();
-        aes.Key = encryptionKey.Key;
-        aes.IV = encryptionKey.InitializationVector;
+        aes.Key = key;
+        aes.IV = iv;
 
         var encryptedCustomer = new EncryptedCustomer
         {
@@ -84,9 +93,11 @@ public class CryptoService(CustomersDbContext customersDb, KeyVaultDbContext key
         if (encryptionKey is null)
             return new DecryptResult(DecryptStatus.Shredded, null, null);
 
+        var (key, iv) = UnwrapKeyMaterial(encryptionKey.WrappedKeyMaterial);
+
         using var aes = Aes.Create();
-        aes.Key = encryptionKey.Key;
-        aes.IV = encryptionKey.InitializationVector;
+        aes.Key = key;
+        aes.IV = iv;
 
         var customer = new Customer(
             id,
@@ -126,14 +137,42 @@ public class CryptoService(CustomersDbContext customersDb, KeyVaultDbContext key
 
     private static string CacheKey(Guid id) => $"customer:{id}:decrypted";
 
-    private static EncryptionKey GenerateEncryptionKey(Guid customerId)
+    private static (byte[] Key, byte[] Iv) GenerateCustomerKey()
     {
         var key = new byte[16];
         var iv = new byte[16];
         RandomNumberGenerator.Fill(key);
         RandomNumberGenerator.Fill(iv);
+        return (key, iv);
+    }
 
-        return new EncryptionKey { CustomerId = customerId, Key = key, InitializationVector = iv };
+    /// <summary>
+    /// Embrulha a DEK do cliente (key + iv) com a master key (KEK). Em produção, essa chamada seria um
+    /// wrap/encrypt no Key Vault ou no Vault Transit em vez de AES local — a KEK nunca sairia de lá.
+    /// </summary>
+    private byte[] WrapKeyMaterial(byte[] key, byte[] iv)
+    {
+        using var aes = Aes.Create();
+        aes.Key = _masterKey;
+        aes.IV = _masterIv;
+        return aes.EncryptCbc(Concat(key, iv), aes.IV, PaddingMode.PKCS7);
+    }
+
+    private (byte[] Key, byte[] Iv) UnwrapKeyMaterial(byte[] wrappedKeyMaterial)
+    {
+        using var aes = Aes.Create();
+        aes.Key = _masterKey;
+        aes.IV = _masterIv;
+        var keyMaterial = aes.DecryptCbc(wrappedKeyMaterial, aes.IV, PaddingMode.PKCS7);
+        return (keyMaterial[..16], keyMaterial[16..]);
+    }
+
+    private static byte[] Concat(byte[] first, byte[] second)
+    {
+        var result = new byte[first.Length + second.Length];
+        Buffer.BlockCopy(first, 0, result, 0, first.Length);
+        Buffer.BlockCopy(second, 0, result, first.Length, second.Length);
+        return result;
     }
 
     private static string Encrypt(Aes aes, string plainText) =>

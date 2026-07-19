@@ -61,6 +61,9 @@ services:
       ConnectionStrings__CustomersDb: Host=postgres-customers;Port=5432;Database=customersdb;Username=postgres;Password=postgres
       ConnectionStrings__KeyVault: Host=postgres-customers-keys;Port=5432;Database=keyvault;Username=postgres;Password=postgres
       ConnectionStrings__Redis: redis:6379
+      # KEK que embrulha a DEK de cada cliente. Aqui vem de env var; em produção viria de um Key Vault/Vault.
+      MasterKey__Key: 0Wo0wBzlJN4Mk9YDsstGwtyVqeagY427Ny+V//2vfvs=
+      MasterKey__Iv: w2f36u5YcyhBZ0+qtelp8A==
     ports:
       - "5231:8080"
     restart: on-failure
