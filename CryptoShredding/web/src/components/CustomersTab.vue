@@ -45,6 +45,11 @@ function fillFakeData() {
   form.address = randomAddress()
 }
 
+function truncate(value, length = 18) {
+  if (!value) return ''
+  return value.length > length ? `${value.slice(0, length)}…` : value
+}
+
 async function load() {
   loading.value = true
   error.value = ''
@@ -137,16 +142,25 @@ onMounted(load)
             <th>Decifrado (via chave)</th>
             <th>Chave</th>
             <th>Origem</th>
-            <th></th>
+            <th>Ação</th>
           </tr>
         </thead>
         <tbody>
           <tr v-for="customer in customers" :key="customer.id">
             <td class="cell-mono">{{ customer.id.slice(0, 8) }}</td>
-            <td class="cell-mono">
-              <span class="field-label">nome</span>{{ customer.encryptedName }}<br />
-              <span class="field-label">documento</span>{{ customer.encryptedDocument }}<br />
-              <span class="field-label">endereço</span>{{ customer.encryptedAddress }}
+            <td class="cell-mono cipher-block">
+              <div class="cipher-row">
+                <span class="field-label">nome</span>
+                <span class="cipher-value" :title="customer.encryptedName">{{ truncate(customer.encryptedName) }}</span>
+              </div>
+              <div class="cipher-row">
+                <span class="field-label">documento</span>
+                <span class="cipher-value" :title="customer.encryptedDocument">{{ truncate(customer.encryptedDocument) }}</span>
+              </div>
+              <div class="cipher-row">
+                <span class="field-label">endereço</span>
+                <span class="cipher-value" :title="customer.encryptedAddress">{{ truncate(customer.encryptedAddress) }}</span>
+              </div>
             </td>
             <td>
               <template v-if="decryptedById[customer.id]?.status === 'ok'">
@@ -154,21 +168,23 @@ onMounted(load)
                 <div class="muted">{{ decryptedById[customer.id].decrypted.document }}</div>
                 <div class="muted">{{ decryptedById[customer.id].decrypted.address }}</div>
               </template>
-              <span v-else class="muted">🗝️❌ dado esquecido (shredded)</span>
+              <span v-else class="muted">dado esquecido</span>
             </td>
             <td>
               <span v-if="customer.keyExists" class="badge badge-ok">🔑 Ativa</span>
-              <span v-else class="badge badge-danger">🗝️❌ Shredded</span>
+              <span v-else class="badge badge-danger">🚫 Shredded</span>
             </td>
             <td>
               <span v-if="decryptedById[customer.id]?.source" class="badge badge-neutral">
                 {{ decryptedById[customer.id].source }}
               </span>
+              <span v-else class="muted">—</span>
             </td>
             <td>
               <button v-if="customer.keyExists" class="danger" @click="onShred(customer.id)">
                 Shred (apagar chave)
               </button>
+              <span v-else class="muted">—</span>
             </td>
           </tr>
         </tbody>

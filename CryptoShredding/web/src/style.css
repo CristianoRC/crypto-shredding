@@ -297,10 +297,33 @@ th {
   color: var(--text-muted);
 }
 
+.cipher-block {
+  max-width: 240px;
+}
+
+.cipher-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.cipher-row + .cipher-row {
+  margin-top: 3px;
+}
+
+.cipher-value {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: help;
+}
+
 .field-label {
   color: var(--text-muted);
   font-size: 11px;
-  display: block;
+  flex-shrink: 0;
+  width: 62px;
+  white-space: nowrap;
 }
 
 .badge {
