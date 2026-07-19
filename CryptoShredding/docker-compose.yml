@@ -1,6 +1,106 @@
-﻿services:
-  cryptoshredding.api:
-    image: cryptoshredding.api
+services:
+  postgres-customers:
+    image: postgres:17
+    environment:
+      POSTGRES_DB: customersdb
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-customers-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 2s
+      timeout: 5s
+      retries: 20
+
+  postgres-customers-keys:
+    image: postgres:17
+    environment:
+      POSTGRES_DB: keyvault
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres-customers-keys-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 2s
+      timeout: 5s
+      retries: 20
+
+  postgres-orders:
+    image: postgres:17
+    environment:
+      POSTGRES_DB: ordersdb
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5434:5432"
+    volumes:
+      - postgres-orders-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 2s
+      timeout: 5s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+  customers-api:
+    image: customers-api
     build:
       context: .
-      dockerfile: CryptoShredding.Api/Dockerfile
+      dockerfile: Customers/Customers.Api/Dockerfile
+    environment:
+      ConnectionStrings__CustomersDb: Host=postgres-customers;Port=5432;Database=customersdb;Username=postgres;Password=postgres
+      ConnectionStrings__KeyVault: Host=postgres-customers-keys;Port=5432;Database=keyvault;Username=postgres;Password=postgres
+      ConnectionStrings__Redis: redis:6379
+    ports:
+      - "5231:8080"
+    restart: on-failure
+    depends_on:
+      postgres-customers:
+        condition: service_healthy
+      postgres-customers-keys:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+  orders-api:
+    image: orders-api
+    build:
+      context: .
+      dockerfile: Orders/Orders.Api/Dockerfile
+    environment:
+      ConnectionStrings__OrdersDb: Host=postgres-orders;Port=5432;Database=ordersdb;Username=postgres;Password=postgres
+      Services__CustomersApiBaseUrl: http://customers-api:8080/
+    ports:
+      - "5122:8080"
+    restart: on-failure
+    depends_on:
+      postgres-orders:
+        condition: service_healthy
+      customers-api:
+        condition: service_started
+
+  web:
+    image: web
+    build:
+      context: ./web
+      dockerfile: Dockerfile
+    ports:
+      - "8081:80"
+    depends_on:
+      - customers-api
+      - orders-api
+
+volumes:
+  postgres-customers-data:
+  postgres-customers-keys-data:
+  postgres-orders-data:
