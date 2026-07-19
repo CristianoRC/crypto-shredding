@@ -4,7 +4,7 @@ POC didática de **crypto-shredding**: cada cliente tem uma chave AES própria. 
 (GDPR/LGPD) = apagar só a chave. O dado cifrado continua no banco para sempre, mas irrecuperável.
 
 - `Customers`: dono do PII. Cifra nome/documento/endereço e guarda em `postgres-customers`. A chave vai
-  num banco separado, `postgres-customers-keys` (o cofre). Um Redis cacheia o resultado decifrado (TTL 60s).
+  num banco separado, `postgres-customers-keys` (o cofre). Um Redis cacheia o resultado decifrado (TTL 10min).
 - `Orders`: "outro sistema". Guarda só `CustomerId` + dados de negócio, nunca PII, e busca o cliente via
   HTTP na API de `Customers`.
 
@@ -23,7 +23,7 @@ flowchart TD
 
     CustomersApi --> PgCustomers[("postgres-customers\ncustomersdb.Customers\nEncryptedName/Document/Address")]
     CustomersApi --> PgKeys[("postgres-customers-keys\nkeyvault.EncryptionKeys\nCOFRE")]
-    CustomersApi --> Redis[("redis\ncache do decifrado, TTL 60s")]
+    CustomersApi --> Redis[("redis\ncache do decifrado, TTL 10min")]
     OrdersApi --> PgOrders[("postgres-orders\nordersdb.Orders\nId, CustomerId, Product, Amount")]
 ```
 
@@ -61,7 +61,7 @@ Docker, [kind](https://kind.sigs.k8s.io/), kubectl. .NET 10 SDK é opcional (só
 Acesse **<http://localhost>**:
 
 1. Aba **Clientes**: crie um cliente. O badge `source` mostra `database` na primeira leitura e `cache`
-   nas seguintes (TTL 60s).
+   nas seguintes (TTL 10min).
 2. Aba **Pedidos**: crie um pedido para esse cliente. A tabela mostra o nome do cliente (buscado ao vivo
    na `customers-api`).
 3. Clique em **Shred (apagar chave)** na aba Clientes.

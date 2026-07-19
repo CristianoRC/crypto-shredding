@@ -21,7 +21,7 @@ public record CustomerSummary(Guid Id, string EncryptedName, string EncryptedDoc
 
 public class CryptoService(CustomersDbContext customersDb, KeyVaultDbContext keyVaultDb, IDistributedCache cache)
 {
-    private static readonly TimeSpan CacheTtl = TimeSpan.FromSeconds(60);
+    private static readonly TimeSpan CacheTtl = TimeSpan.FromMinutes(10);
 
     public async Task<Customer> CreateAsync(Customer customer)
     {
